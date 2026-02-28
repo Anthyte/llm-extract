@@ -1,0 +1,106 @@
+{
+  "description": "Synthetic test cases for llm-extract",
+  "cases": [
+    {
+      "name": "simple_object",
+      "input": "{\"key\": \"value\"}",
+      "expected": {"key": "value"}
+    },
+    {
+      "name": "simple_array",
+      "input": "[1, 2, 3]",
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "nested_object",
+      "input": "{\"outer\": {\"inner\": {\"deep\": true}}}",
+      "expected": {"outer": {"inner": {"deep": true}}}
+    },
+    {
+      "name": "json_in_markdown_fence",
+      "input": "Here is the output:\n```json\n{\"key\": \"value\"}\n```",
+      "expected": {"key": "value"}
+    },
+    {
+      "name": "json_in_generic_fence",
+      "input": "```\n{\"key\": \"value\"}\n```",
+      "expected": {"key": "value"}
+    },
+    {
+      "name": "json_with_surrounding_text",
+      "input": "The result is: {\"success\": true} as expected.",
+      "expected": {"success": true}
+    },
+    {
+      "name": "trailing_comma_object",
+      "input": "{\"key\": \"value\",}",
+      "expected": {"key": "value"}
+    },
+    {
+      "name": "trailing_comma_array",
+      "input": "[1, 2, 3,]",
+      "expected": [1, 2, 3]
+    },
+    {
+      "name": "single_quoted_strings",
+      "input": "{'key': 'value'}",
+      "expected": {"key": "value"}
+    },
+    {
+      "name": "unquoted_keys",
+      "input": "{key: \"value\", another: 123}",
+      "expected": {"key": "value", "another": 123}
+    },
+    {
+      "name": "unicode_content",
+      "input": "{\"emoji\": \"🎉\", \"chinese\": \"中文\", \"arabic\": \"العربية\"}",
+      "expected": {"emoji": "🎉", "chinese": "中文", "arabic": "العربية"}
+    },
+    {
+      "name": "escaped_characters",
+      "input": "{\"text\": \"line1\\nline2\\ttab\"}",
+      "expected": {"text": "line1\nline2\ttab"}
+    },
+    {
+      "name": "null_value",
+      "input": "{\"key\": null}",
+      "expected": {"key": null}
+    },
+    {
+      "name": "boolean_values",
+      "input": "{\"yes\": true, \"no\": false}",
+      "expected": {"yes": true, "no": false}
+    },
+    {
+      "name": "numeric_types",
+      "input": "{\"int\": 42, \"float\": 3.14, \"negative\": -1, \"scientific\": 1e10}",
+      "expected": {"int": 42, "float": 3.14, "negative": -1, "scientific": 1e10}
+    },
+    {
+      "name": "empty_object",
+      "input": "{}",
+      "expected": {}
+    },
+    {
+      "name": "empty_array",
+      "input": "[]",
+      "expected": []
+    },
+    {
+      "name": "array_of_objects",
+      "input": "[{\"id\": 1}, {\"id\": 2}, {\"id\": 3}]",
+      "expected": [{"id": 1}, {"id": 2}, {"id": 3}]
+    },
+    {
+      "name": "multiple_json_blocks",
+      "input": "{\"first\": 1} and then {\"second\": 2}",
+      "expected_first": {"first": 1},
+      "expected_all": [{"first": 1}, {"second": 2}]
+    },
+    {
+      "name": "json_with_bom",
+      "input": "\ufeff{\"key\": \"value\"}",
+      "expected": {"key": "value"}
+    }
+  ]
+}

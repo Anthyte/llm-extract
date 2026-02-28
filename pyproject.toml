@@ -1,0 +1,106 @@
+[project]
+name = "llm-extract"
+version = "0.0.1"
+description = "Extract structured data from any LLM. Fast. Simple. Reliable."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Rahul Vishwakarma", email = "66162129+rvv-karma@users.noreply.github.com"}
+]
+requires-python = ">=3.9"
+keywords = [
+    "llm",
+    "json",
+    "extract",
+    "parse",
+    "openai",
+    "anthropic",
+    "gpt",
+    "claude",
+    "structured-output",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: General",
+    "Typing :: Typed",
+]
+dependencies = [
+    "orjson>=3.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "hypothesis>=6.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+docs = [
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.24",
+]
+bench = [
+    "pytest-benchmark>=4.0",
+]
+
+[project.scripts]
+llm-extract = "llm_extract.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Anthyte/llm-extract"
+Documentation = "https://anthyte.github.io/llm-extract"
+Repository = "https://github.com/Anthyte/llm-extract"
+Issues = "https://github.com/Anthyte/llm-extract/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_extract"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=llm_extract --cov-report=html --cov-report=term"
+
+[tool.coverage.run]
+source = ["src/llm_extract"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+# 99% allows for partial branch coverage edge cases
+fail_under = 99
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
