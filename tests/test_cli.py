@@ -1,4 +1,5 @@
 """Tests for ai_extract.cli module."""
+
 import tempfile
 from io import StringIO
 from pathlib import Path
