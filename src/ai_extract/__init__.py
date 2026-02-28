@@ -39,12 +39,4 @@ __all__ = [
     "ExtractionMethod",
     "ErrorType",
     "Candidate",
-    # Metadata
-    "__version__",
-    "__author__",
-    "__email__",
 ]
-
-__version__ = "0.0.1"
-__author__ = "Rahul Vishwakarma"
-__email__ = "rahulvv8878@gmail.com"
