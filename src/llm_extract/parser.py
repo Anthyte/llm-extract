@@ -153,9 +153,7 @@ def _extract_first_valid(candidates: list[Candidate], repair: bool) -> ExtractRe
         try:
             data = orjson.loads(repair_result.repaired)
             # Adjust confidence if repairs were needed
-            adjusted_confidence = (
-                candidate.confidence * 0.9 if repairs else candidate.confidence
-            )
+            adjusted_confidence = candidate.confidence * 0.9 if repairs else candidate.confidence
             # Truncation path requires extractor to find truncated JSON (rare)
             if repair_result.is_truncated:  # pragma: no cover
                 adjusted_confidence *= 0.8
@@ -219,9 +217,7 @@ def _extract_all(candidates: list[Candidate], repair: bool) -> ExtractResult:
         try:
             data = orjson.loads(repair_result.repaired)
             results.append(data)
-            adjusted_confidence = (
-                candidate.confidence * 0.9 if repairs else candidate.confidence
-            )
+            adjusted_confidence = candidate.confidence * 0.9 if repairs else candidate.confidence
             max_confidence = max(max_confidence, adjusted_confidence)
             successful_methods.append(candidate.method)
         except orjson.JSONDecodeError:

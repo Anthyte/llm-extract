@@ -125,9 +125,7 @@ class TestCalculateBraceMatchConfidence:
     def test_short_content_penalty(self) -> None:
         """Test that very short content gets penalized."""
         conf_short = _calculate_brace_match_confidence("{}")
-        conf_longer = _calculate_brace_match_confidence(
-            '{"key": "value", "another": 123}'
-        )
+        conf_longer = _calculate_brace_match_confidence('{"key": "value", "another": 123}')
         assert conf_longer > conf_short
 
     def test_max_confidence_capped(self) -> None:

@@ -116,10 +116,10 @@ def _normalize_quotes(text: str) -> tuple[str, list[str]]:
 
         # Replace single quotes with double quotes when not in a string
         if char == "'" and not in_double_string and _is_json_string_quote(text, i):
-                result.append('"')
-                modified = True
-                i += 1
-                continue
+            result.append('"')
+            modified = True
+            i += 1
+            continue
 
         result.append(char)
         i += 1

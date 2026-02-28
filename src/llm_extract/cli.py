@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Literal
+from typing import Literal, cast
 
 import orjson
 
@@ -148,7 +148,7 @@ Examples:
 def _get_input_text(args: argparse.Namespace) -> str | None:
     """Get input text from arguments, file, or stdin."""
     if args.text:
-        return args.text
+        return cast(str, args.text)
 
     if args.file:
         try:

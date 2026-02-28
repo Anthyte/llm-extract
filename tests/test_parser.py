@@ -215,9 +215,7 @@ class TestExtractJsonWithMetadata:
     def test_invalid_json_error(self) -> None:
         """Test invalid JSON error when repair fails."""
         # Text that looks like JSON but can't be parsed
-        result = extract_json_with_metadata(
-            '{"key": value_without_quotes}', repair=False
-        )
+        result = extract_json_with_metadata('{"key": value_without_quotes}', repair=False)
         assert result.success is False
         assert result.error is not None
         assert result.error.error_type == ErrorType.INVALID_JSON
