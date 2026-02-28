@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Check if tests passed
+        run: |
+          if [[ ${{ github.event.workflow_run.conclusion }} != "success" ]]; then
+            echo "Tests did not pass. Skipping release."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine hatchling packaging
+
+      # -------------------------
+      # Extract version from pyproject.toml
+      # -------------------------
+      - name: Extract version
+        id: extract_version
+        run: |
+          VERSION=$(python scripts/workflows/extract_version.py)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      # -------------------------
+      # Get latest git tag version
+      # -------------------------
+      - name: Get latest release version
+        id: get_latest_version
+        run: |
+          LATEST_VERSION=$(bash scripts/workflows/get_latest_version.sh)
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          echo "Latest release version: $LATEST_VERSION"
+
+      # -------------------------
+      # Compare versions safely (PEP 440 compliant)
+      # -------------------------
+      - name: Compare versions
+        id: version_check
+        run: |
+          NEW_VERSION="${{ env.VERSION }}"
+          LATEST_VERSION="${{ steps.get_latest_version.outputs.latest_version }}"
+
+          IS_GREATER=$(python scripts/workflows/compare_versions.py "$NEW_VERSION" "$LATEST_VERSION")
+
+          if [ "$IS_GREATER" = "true" ]; then
+            echo "version_greater=true" >> $GITHUB_OUTPUT
+            echo "New version $NEW_VERSION is valid"
+          else
+            echo "version_greater=false" >> $GITHUB_OUTPUT
+            echo "New version is not greater than latest"
+          fi
+
+      - name: Validate version increment
+        id: validate_version
+        if: steps.version_check.outputs.version_greater == 'false' && steps.get_latest_version.outputs.latest_version != '0.0.0'
+        run: |
+          echo "WARNING: Version not incremented. Skipping release creation."
+          echo "version_valid=false" >> $GITHUB_OUTPUT
+
+      # -------------------------
+      # Build package BEFORE tagging
+      # -------------------------
+      - name: Build package
+        if: steps.validate_version.outputs.version_valid != 'false'
+        run: |
+          python -m build
+
+      # -------------------------
+      # Check if tag exists
+      # -------------------------
+      - name: Check if tag exists
+        id: check_tag
+        if: steps.validate_version.outputs.version_valid != 'false'
+        run: |
+          if git tag --list | grep -q "^v${{ env.VERSION }}$"; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag already exists"
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # -------------------------
+      # Create and push tag
+      # -------------------------
+      - name: Create tag
+        if: steps.check_tag.outputs.tag_exists == 'false' && steps.validate_version.outputs.version_valid != 'false'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      # -------------------------
+      # Create GitHub Release
+      # -------------------------
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.tag_exists == 'false' && steps.validate_version.outputs.version_valid != 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          body: |
+            ## Version ${{ env.VERSION }}
+
+            Automated release based on pyproject.toml version.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
