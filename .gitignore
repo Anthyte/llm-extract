@@ -85,3 +85,4 @@ Thumbs.db
 benchmarks/results/*.json
 benchmarks/results/*.html
 SPEC.md
+.pypirc

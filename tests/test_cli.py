@@ -36,18 +36,22 @@ class TestMain:
 
     def test_json_from_stdin(self) -> None:
         """Test extracting JSON from stdin."""
-        with patch("sys.stdin", StringIO('{"key": "value"}')):
-            with patch("sys.stdin.isatty", return_value=False):
-                with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-                    exit_code = main([])
+        with (
+            patch("sys.stdin", StringIO('{"key": "value"}')),
+            patch("sys.stdin.isatty", return_value=False),
+            patch("sys.stdout", new_callable=StringIO) as mock_stdout,
+        ):
+            exit_code = main([])
         assert exit_code == 0
         assert '{"key":"value"}' in mock_stdout.getvalue()
 
     def test_no_input_error(self) -> None:
         """Test error when no input provided."""
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
-                exit_code = main([])
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("sys.stderr", new_callable=StringIO) as mock_stderr,
+        ):
+            exit_code = main([])
         assert exit_code == 1
         assert "No input provided" in mock_stderr.getvalue()
 
@@ -83,7 +87,7 @@ class TestMain:
 
     def test_no_repair_flag(self) -> None:
         """Test --no-repair flag."""
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch("sys.stderr", new_callable=StringIO):
             exit_code = main(['{"key": "value",}', "--no-repair"])
         assert exit_code == 1  # Should fail without repair
 
@@ -105,15 +109,17 @@ class TestMain:
 
     def test_strategy_option(self) -> None:
         """Test --strategy option."""
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
+        with patch("sys.stdout", new_callable=StringIO):
             exit_code = main(['{"a": 1}', "--strategy", "first"])
         assert exit_code == 0
 
     def test_verbose_flag(self) -> None:
         """Test --verbose flag shows metadata."""
-        with patch("sys.stdout", new_callable=StringIO):
-            with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
-                exit_code = main(['{"key": "value"}', "--verbose"])
+        with (
+            patch("sys.stdout", new_callable=StringIO),
+            patch("sys.stderr", new_callable=StringIO) as mock_stderr,
+        ):
+            exit_code = main(['{"key": "value"}', "--verbose"])
         assert exit_code == 0
         stderr_output = mock_stderr.getvalue()
         assert "Confidence:" in stderr_output
@@ -121,16 +127,18 @@ class TestMain:
 
     def test_verbose_with_repairs(self) -> None:
         """Test verbose output shows repairs."""
-        with patch("sys.stdout", new_callable=StringIO):
-            with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
-                exit_code = main(['{"key": "value",}', "--verbose"])
+        with (
+            patch("sys.stdout", new_callable=StringIO),
+            patch("sys.stderr", new_callable=StringIO) as mock_stderr,
+        ):
+            exit_code = main(['{"key": "value",}', "--verbose"])
         assert exit_code == 0
         assert "Repairs applied:" in mock_stderr.getvalue()
 
     def test_verbose_on_error(self) -> None:
         """Test verbose shows candidates on error."""
         # Create a situation where candidates are found but parsing fails
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch("sys.stderr", new_callable=StringIO):
             exit_code = main(["{invalid json}", "--verbose", "--no-repair"])
         assert exit_code == 1
 
@@ -190,9 +198,11 @@ class TestGetInputText:
         import argparse
 
         args = argparse.Namespace(text=None, file=None)
-        with patch("sys.stdin", StringIO("stdin content")):
-            with patch("sys.stdin.isatty", return_value=False):
-                result = _get_input_text(args)
+        with (
+            patch("sys.stdin", StringIO("stdin content")),
+            patch("sys.stdin.isatty", return_value=False),
+        ):
+            result = _get_input_text(args)
         assert result == "stdin content"
 
     def test_no_input(self) -> None:
