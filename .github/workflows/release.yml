@@ -5,26 +5,22 @@ on:
     workflows: ["Test"]
     types:
       - completed
-    branches: [main]
 
 jobs:
   release:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
-      packages: write
 
     steps:
-      - name: Check if tests passed
-        run: |
-          if [[ ${{ github.event.workflow_run.conclusion }} != "success" ]]; then
-            echo "Tests did not pass. Skipping release."
-            exit 1
-          fi
-
-      - name: Checkout repository
+      - name: Checkout repository at tested commit
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -38,7 +34,7 @@ jobs:
           pip install build twine hatchling packaging
 
       # -------------------------
-      # Extract version from pyproject.toml
+      # Extract version
       # -------------------------
       - name: Extract version
         id: extract_version
@@ -49,7 +45,7 @@ jobs:
           echo "Detected version: $VERSION"
 
       # -------------------------
-      # Get latest git tag version
+      # Get latest tag
       # -------------------------
       - name: Get latest release version
         id: get_latest_version
@@ -59,7 +55,7 @@ jobs:
           echo "Latest release version: $LATEST_VERSION"
 
       # -------------------------
-      # Compare versions safely (PEP 440 compliant)
+      # Compare versions
       # -------------------------
       - name: Compare versions
         id: version_check
@@ -71,46 +67,39 @@ jobs:
 
           if [ "$IS_GREATER" = "true" ]; then
             echo "version_greater=true" >> $GITHUB_OUTPUT
-            echo "New version $NEW_VERSION is valid"
           else
             echo "version_greater=false" >> $GITHUB_OUTPUT
-            echo "New version is not greater than latest"
           fi
 
-      - name: Validate version increment
-        id: validate_version
+      - name: Stop if version not incremented
         if: steps.version_check.outputs.version_greater == 'false' && steps.get_latest_version.outputs.latest_version != '0.0.0'
         run: |
-          echo "WARNING: Version not incremented. Skipping release creation."
-          echo "version_valid=false" >> $GITHUB_OUTPUT
+          echo "Version not incremented. Skipping release."
+          exit 0
 
       # -------------------------
-      # Build package BEFORE tagging
+      # Build first
       # -------------------------
       - name: Build package
-        if: steps.validate_version.outputs.version_valid != 'false'
-        run: |
-          python -m build
+        run: python -m build
 
       # -------------------------
       # Check if tag exists
       # -------------------------
       - name: Check if tag exists
         id: check_tag
-        if: steps.validate_version.outputs.version_valid != 'false'
         run: |
           if git tag --list | grep -q "^v${{ env.VERSION }}$"; then
             echo "tag_exists=true" >> $GITHUB_OUTPUT
-            echo "Tag already exists"
           else
             echo "tag_exists=false" >> $GITHUB_OUTPUT
           fi
 
       # -------------------------
-      # Create and push tag
+      # Create tag
       # -------------------------
       - name: Create tag
-        if: steps.check_tag.outputs.tag_exists == 'false' && steps.validate_version.outputs.version_valid != 'false'
+        if: steps.check_tag.outputs.tag_exists == 'false'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -121,7 +110,7 @@ jobs:
       # Create GitHub Release
       # -------------------------
       - name: Create GitHub Release
-        if: steps.check_tag.outputs.tag_exists == 'false' && steps.validate_version.outputs.version_valid != 'false'
+        if: steps.check_tag.outputs.tag_exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
@@ -129,8 +118,17 @@ jobs:
           body: |
             ## Version ${{ env.VERSION }}
 
-            Automated release based on pyproject.toml version.
-          draft: false
-          prerelease: false
+            Automated release after successful tests.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # -------------------------
+      # Publish to PyPI
+      # -------------------------
+      - name: Publish to PyPI
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          twine upload --skip-existing dist/*
