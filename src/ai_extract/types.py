@@ -1,4 +1,4 @@
-"""Type definitions for llm-extract."""
+"""Type definitions for ai-extract."""
 
 from __future__ import annotations
 

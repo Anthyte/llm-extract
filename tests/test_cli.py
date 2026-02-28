@@ -1,12 +1,11 @@
-"""Tests for llm_extract.cli module."""
-
+"""Tests for ai_extract.cli module."""
 import tempfile
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from llm_extract.cli import _format_output, _get_input_text, _print_metadata, main
-from llm_extract.types import ExtractionMethod, ExtractResult
+from ai_extract.cli import _format_output, _get_input_text, _print_metadata, main
+from ai_extract.types import ExtractionMethod, ExtractResult
 
 
 class TestMain:

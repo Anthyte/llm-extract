@@ -1,4 +1,4 @@
-"""Command-line interface for llm-extract."""
+"""Command-line interface for ai-extract."""
 
 from __future__ import annotations
 
@@ -21,16 +21,16 @@ def main(args: list[str] | None = None) -> int:
         Exit code (0 for success, 1 for error).
     """
     parser = argparse.ArgumentParser(
-        prog="llm-extract",
-        description="Extract JSON from LLM output text. Fast. Simple. Reliable.",
+        prog="ai-extract",
+        description="Extract JSON from AI output text. Fast. Simple. Reliable.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  llm-extract '{"key": "value"}'
-  llm-extract -f response.txt
-  echo '{"key": "value"}' | llm-extract
-  llm-extract -f response.txt --pretty
-  llm-extract -f response.txt --all --verbose
+  ai-extract '{"key": "value"}'
+  ai-extract -f response.txt
+  echo '{"key": "value"}' | ai-extract
+  ai-extract -f response.txt --pretty
+  ai-extract -f response.txt --all --verbose
         """,
     )
 

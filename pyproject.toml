@@ -1,15 +1,16 @@
 [project]
-name = "llm-extract"
+name = "ai-extract"
 version = "0.0.1"
-description = "Extract structured data from any LLM. Fast. Simple. Reliable."
+description = "Extract structured data from any AI. Fast. Simple. Reliable."
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Rahul Vishwakarma", email = "66162129+rvv-karma@users.noreply.github.com"}
+    {name = "Rahul Vishwakarma", email = "rahulvv8878@gmail.com"}
 ]
 requires-python = ">=3.9"
 keywords = [
     "llm",
+    "ai",
     "json",
     "extract",
     "parse",
@@ -17,6 +18,8 @@ keywords = [
     "anthropic",
     "gpt",
     "claude",
+    "gemini",
+    "grok",
     "structured-output",
 ]
 classifiers = [
@@ -55,30 +58,30 @@ bench = [
 ]
 
 [project.scripts]
-llm-extract = "llm_extract.cli:main"
+ai-extract = "ai_extract.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Anthyte/llm-extract"
-Documentation = "https://anthyte.github.io/llm-extract"
-Repository = "https://github.com/Anthyte/llm-extract"
-Issues = "https://github.com/Anthyte/llm-extract/issues"
+Homepage = "https://github.com/Anthyte/ai-extract"
+Documentation = "https://anthyte.github.io/ai-extract"
+Repository = "https://github.com/Anthyte/ai-extract"
+Issues = "https://github.com/Anthyte/ai-extract/issues"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/llm_extract"]
+packages = ["src/ai_extract"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=llm_extract --cov-report=html --cov-report=term"
+addopts = "--cov=ai_extract --cov-report=html --cov-report=term"
 
 [tool.coverage.run]
-source = ["src/llm_extract"]
+source = ["src/ai_extract"]
 branch = true
 
 [tool.coverage.report]

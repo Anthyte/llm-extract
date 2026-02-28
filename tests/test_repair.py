@@ -1,6 +1,6 @@
-"""Tests for llm_extract.repair module."""
+"""Tests for ai_extract.repair module."""
 
-from llm_extract.repair import (
+from ai_extract.repair import (
     _cleanup_whitespace,
     _complete_truncated,
     _fix_unquoted_keys,

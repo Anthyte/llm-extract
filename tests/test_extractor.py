@@ -1,6 +1,6 @@
-"""Tests for llm_extract.extractor module."""
+"""Tests for ai_extract.extractor module."""
 
-from llm_extract.extractor import (
+from ai_extract.extractor import (
     _calculate_brace_match_confidence,
     _looks_like_json,
     _match_braces,
@@ -11,7 +11,7 @@ from llm_extract.extractor import (
     extract_heuristic,
     rank_candidates,
 )
-from llm_extract.types import Candidate, ExtractionMethod
+from ai_extract.types import Candidate, ExtractionMethod
 
 
 class TestLooksLikeJson:

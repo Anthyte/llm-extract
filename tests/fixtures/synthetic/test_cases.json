@@ -1,5 +1,5 @@
 {
-  "description": "Synthetic test cases for llm-extract",
+  "description": "Synthetic test cases for ai-extract",
   "cases": [
     {
       "name": "simple_object",

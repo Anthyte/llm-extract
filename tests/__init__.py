@@ -1,1 +1,1 @@
-"""Test suite for llm-extract."""
+"""Test suite for ai-extract."""

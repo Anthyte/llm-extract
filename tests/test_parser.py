@@ -1,8 +1,8 @@
-"""Tests for llm_extract.parser module."""
+"""Tests for ai_extract.parser module."""
 
 import pytest
 
-from llm_extract import (
+from ai_extract import (
     ErrorType,
     ExtractError,
     ExtractionMethod,
@@ -182,7 +182,7 @@ class TestExtractJsonWithMetadata:
     def test_truncated_json_in_repair_result(self) -> None:
         """Test that truncated JSON gets repaired when possible."""
         # Use repair module directly to test truncation handling
-        from llm_extract.repair import is_truncated_json, repair_json
+        from ai_extract.repair import is_truncated_json, repair_json
 
         # Verify truncation detection
         assert is_truncated_json('{"key": "value"') is True

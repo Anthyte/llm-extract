@@ -1,18 +1,18 @@
-# llm-extract
+# ai-extract
 
-> Extract structured data from any LLM. Fast. Simple. Reliable.
+> Extract structured data from any AI. Fast. Simple. Reliable.
 
-[![PyPI version](https://badge.fury.io/py/llm-extract.svg)](https://badge.fury.io/py/llm-extract)
+[![PyPI version](https://badge.fury.io/py/ai-extract.svg)](https://badge.fury.io/py/ai-extract)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**llm-extract** is a fast, lightweight Python library for extracting JSON from messy LLM outputs. It handles markdown fences, surrounding text, malformed JSON, and more.
+**ai-extract** is a fast, lightweight Python library for extracting JSON from messy AI outputs. It handles markdown fences, surrounding text, malformed JSON, and more.
 
 ## Features
 
 - **Fast**: Uses `orjson` for 10x faster JSON parsing
 - **Reliable**: Multiple extraction strategies with automatic fallback
-- **Smart Repair**: Fixes common LLM JSON errors (trailing commas, single quotes, unquoted keys)
+- **Smart Repair**: Fixes common AI JSON errors (trailing commas, single quotes, unquoted keys)
 - **Simple API**: One function for most use cases
 - **CLI Tool**: Quick extraction from command line
 - **Zero Config**: Works out of the box
@@ -20,15 +20,15 @@
 ## Installation
 
 ```bash
-pip install llm-extract
+pip install ai-extract
 ```
 
 ## Quick Start
 
 ```python
-from llm_extract import extract_json
+from ai_extract import extract_json
 
-# Extract from messy LLM output
+# Extract from messy AI output
 text = """
 Here's the JSON you requested:
 ```json
@@ -46,7 +46,7 @@ print(data)  # {'name': 'John', 'age': 30}
 ### Basic Extraction
 
 ```python
-from llm_extract import extract_json
+from ai_extract import extract_json
 
 # Pure JSON
 data = extract_json('{"key": "value"}')
@@ -61,7 +61,7 @@ data = extract_json('```json\n{"data": [1,2,3]}\n```')
 ### Auto-Repair Malformed JSON
 
 ```python
-# Trailing commas (common LLM error)
+# Trailing commas (common AI error)
 data = extract_json('{"items": [1, 2, 3,],}')
 # Returns: {'items': [1, 2, 3]}
 
@@ -93,7 +93,7 @@ data = extract_json('{"a": 1} and {"b": 2}', strategy="all")
 ### Error Handling
 
 ```python
-from llm_extract import extract_json, ExtractError
+from ai_extract import extract_json, ExtractError
 
 # Raise exception (default)
 try:
@@ -110,7 +110,7 @@ data = extract_json("no json here", raise_on_error=False)
 ### Get Extraction Metadata
 
 ```python
-from llm_extract import extract_json_with_metadata
+from ai_extract import extract_json_with_metadata
 
 result = extract_json_with_metadata('```json\n{"key": "value"}\n```')
 
@@ -125,22 +125,22 @@ print(result.repairs_applied)  # []
 
 ```bash
 # From argument
-llm-extract '{"key": "value"}'
+ai-extract '{"key": "value"}'
 
 # From file
-llm-extract -f response.txt
+ai-extract -f response.txt
 
 # From stdin
-echo '{"key": "value"}' | llm-extract
+echo '{"key": "value"}' | ai-extract
 
 # Pretty print
-llm-extract -f response.txt --pretty
+ai-extract -f response.txt --pretty
 
 # Get all JSON blocks
-llm-extract -f response.txt --all
+ai-extract -f response.txt --all
 
 # Show metadata
-llm-extract -f response.txt --verbose
+ai-extract -f response.txt --verbose
 ```
 
 ## API Reference
@@ -179,7 +179,7 @@ Extract JSON with detailed metadata.
 The library tries multiple strategies in order:
 
 1. **Direct Parse** (confidence: 1.0) - Try parsing entire input as JSON
-2. **Markdown Fence** (confidence: 0.95) - Extract from \`\`\`json blocks
+2. **Markdown Fence** (confidence: 0.95) - Extract from ```json blocks
 3. **Brace Matching** (confidence: 0.8) - Find balanced {...} or [...]
 4. **Heuristic** (confidence: 0.6) - Pattern matching after "Here's the JSON:" etc.
 

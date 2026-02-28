@@ -1,8 +1,8 @@
-"""Tests for llm_extract.types module."""
+"""Tests for ai_extract.types module."""
 
 import pytest
 
-from llm_extract.types import (
+from ai_extract.types import (
     Candidate,
     ErrorType,
     ExtractError,

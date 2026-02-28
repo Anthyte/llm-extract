@@ -1,6 +1,6 @@
 """ai-extract: Extract structured data from any AI. Fast. Simple. Reliable.
 
-This library provides fast, reliable JSON extraction from messy LLM outputs.
+This library provides fast, reliable JSON extraction from messy AI outputs.
 
 Basic usage:
     >>> from ai_extract import extract_json

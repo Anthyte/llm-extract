@@ -18,7 +18,7 @@ def extract_json(
     strategy: Literal["first", "largest", "all"] = "first",
     raise_on_error: bool = True,
 ) -> Any | list[Any] | None:
-    """Extract JSON from LLM output text.
+    """Extract JSON from AI output text.
 
     Args:
         text: The text containing JSON to extract.
@@ -70,7 +70,7 @@ def extract_json_with_metadata(
     repair: bool = True,
     strategy: Literal["first", "largest", "all"] = "first",
 ) -> ExtractResult:
-    """Extract JSON from LLM output text with detailed metadata.
+    """Extract JSON from AI output text with detailed metadata.
 
     Args:
         text: The text containing JSON to extract.
