@@ -1,6 +1,6 @@
 # ai-extract
 
-> Extract structured data from any AI. Fast. Simple. Reliable.
+> Extract structured data from any AI response. Fast. Simple. Reliable.
 
 [![PyPI version](https://badge.fury.io/py/ai-extract.svg)](https://badge.fury.io/py/ai-extract)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
