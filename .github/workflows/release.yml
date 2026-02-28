@@ -66,21 +66,17 @@ jobs:
           IS_GREATER=$(python scripts/workflows/compare_versions.py "$NEW_VERSION" "$LATEST_VERSION")
 
           if [ "$IS_GREATER" = "true" ]; then
-            echo "version_greater=true" >> $GITHUB_OUTPUT
+            echo "proceed=true" >> $GITHUB_OUTPUT
           else
-            echo "version_greater=false" >> $GITHUB_OUTPUT
+            echo "Version not incremented. Skipping release."
+            echo "proceed=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Stop if version not incremented
-        if: steps.version_check.outputs.version_greater == 'false' && steps.get_latest_version.outputs.latest_version != '0.0.0'
-        run: |
-          echo "Version not incremented. Skipping release."
-          exit 0
 
       # -------------------------
       # Build first
       # -------------------------
       - name: Build package
+        if: steps.version_check.outputs.proceed == 'true'
         run: python -m build
 
       # -------------------------
@@ -88,6 +84,7 @@ jobs:
       # -------------------------
       - name: Check if tag exists
         id: check_tag
+        if: steps.version_check.outputs.proceed == 'true'
         run: |
           if git tag --list | grep -q "^v${{ env.VERSION }}$"; then
             echo "tag_exists=true" >> $GITHUB_OUTPUT
@@ -99,7 +96,7 @@ jobs:
       # Create tag
       # -------------------------
       - name: Create tag
-        if: steps.check_tag.outputs.tag_exists == 'false'
+        if: steps.version_check.outputs.proceed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -110,7 +107,7 @@ jobs:
       # Create GitHub Release
       # -------------------------
       - name: Create GitHub Release
-        if: steps.check_tag.outputs.tag_exists == 'false'
+        if: steps.version_check.outputs.proceed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
@@ -126,7 +123,7 @@ jobs:
       # Publish to PyPI
       # -------------------------
       - name: Publish to PyPI
-        if: steps.check_tag.outputs.tag_exists == 'false'
+        if: steps.version_check.outputs.proceed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
