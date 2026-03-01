@@ -67,13 +67,6 @@ Examples:
         help="Extract the largest JSON block (shorthand for --strategy largest)",
     )
 
-    # Repair options
-    parser.add_argument(
-        "--no-repair",
-        action="store_true",
-        help="Disable JSON repair attempts",
-    )
-
     # Output options
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument(
@@ -122,7 +115,6 @@ Examples:
     # Extract JSON
     result = extract_json_with_metadata(
         text,
-        repair=not parsed_args.no_repair,
         strategy=strategy,
     )
 
@@ -183,12 +175,9 @@ def _print_metadata(result: object) -> None:
         return
 
     print("\n--- Metadata ---", file=sys.stderr)
-    print(f"Confidence: {result.confidence:.2f}", file=sys.stderr)
     if result.method:
         print(f"Method: {result.method.value}", file=sys.stderr)
     print(f"Candidates found: {result.candidates_found}", file=sys.stderr)
-    if result.repairs_applied:
-        print(f"Repairs applied: {', '.join(result.repairs_applied)}", file=sys.stderr)
 
 
 if __name__ == "__main__":

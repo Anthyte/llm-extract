@@ -27,12 +27,12 @@ def extract_from_markdown_fence(text: str) -> list[Candidate]:
     """Extract JSON candidates from markdown code fences.
 
     Tries multiple patterns:
-    1. ```json ... ``` (highest confidence)
-    2. ``` ... ``` (generic fence, lower confidence)
+    1. ```json ... ``` (highest priority)
+    2. ``` ... ``` (generic fence, lower priority)
     """
     candidates: list[Candidate] = []
 
-    # Try JSON-specific fences first (highest confidence)
+    # Try JSON-specific fences first
     for match in _MARKDOWN_FENCE_JSON.finditer(text):
         content = match.group(1).strip()
         if content and _looks_like_json(content):
@@ -42,11 +42,10 @@ def extract_from_markdown_fence(text: str) -> list[Candidate]:
                     start_pos=match.start(1),
                     end_pos=match.end(1),
                     method=ExtractionMethod.MARKDOWN_FENCE,
-                    confidence=0.95,
                 )
             )
 
-    # Try generic fences (lower confidence)
+    # Try generic fences
     for match in _MARKDOWN_FENCE_ANY.finditer(text):
         content = match.group(1).strip()
         if content and _looks_like_json(content):
@@ -63,7 +62,6 @@ def extract_from_markdown_fence(text: str) -> list[Candidate]:
                         start_pos=match.start(1),
                         end_pos=match.end(1),
                         method=ExtractionMethod.MARKDOWN_FENCE,
-                        confidence=0.85,
                     )
                 )
 
@@ -85,15 +83,12 @@ def extract_from_brace_matching(text: str) -> list[Candidate]:
             if result is not None:
                 start, end = result
                 raw = text[start : end + 1]
-                # Calculate confidence based on structure
-                confidence = _calculate_brace_match_confidence(raw)
                 candidates.append(
                     Candidate(
                         raw=raw,
                         start_pos=start,
                         end_pos=end + 1,
                         method=ExtractionMethod.BRACE_MATCH,
-                        confidence=confidence,
                     )
                 )
                 # Move past this match to avoid nested duplicates
@@ -163,26 +158,6 @@ def _match_braces(text: str, start: int) -> tuple[int, int] | None:
     return None
 
 
-def _calculate_brace_match_confidence(raw: str) -> float:
-    """Calculate confidence score for a brace-matched candidate."""
-    base_confidence = 0.8
-
-    # Bonus for having typical JSON structure
-    if '"' in raw:
-        base_confidence += 0.05
-
-    # Bonus for having colons (key-value pairs)
-    if ":" in raw:
-        base_confidence += 0.05
-
-    # Penalty for very short content
-    if len(raw) < 10:
-        base_confidence -= 0.1
-
-    # Cap at 0.9 (markdown fence is more reliable)
-    return min(0.9, max(0.5, base_confidence))
-
-
 def extract_direct(text: str) -> list[Candidate]:
     """Try to extract the entire text as JSON (after stripping whitespace)."""
     stripped = text.strip()
@@ -197,7 +172,6 @@ def extract_direct(text: str) -> list[Candidate]:
                 start_pos=0,
                 end_pos=len(text),
                 method=ExtractionMethod.DIRECT_PARSE,
-                confidence=1.0,
             )
         ]
 
@@ -208,7 +182,7 @@ def extract_heuristic(text: str) -> list[Candidate]:
     """Extract JSON using heuristic patterns.
 
     Looks for common patterns like "Here's the JSON:" followed by JSON.
-    This is a fallback strategy with lower confidence.
+    This is a fallback strategy with lower priority.
     """
     candidates: list[Candidate] = []
 
@@ -233,7 +207,6 @@ def extract_heuristic(text: str) -> list[Candidate]:
                         start_pos=match.end() + bc.start_pos,
                         end_pos=match.end() + bc.end_pos,
                         method=ExtractionMethod.HEURISTIC,
-                        confidence=0.6,  # Lower confidence for heuristic
                     )
                 )
                 break  # Only take first match after each pattern
@@ -258,20 +231,20 @@ def _looks_like_json(text: str) -> bool:
 def extract_all_candidates(text: str) -> list[Candidate]:
     """Extract all JSON candidates from text using all strategies.
 
-    Returns candidates sorted by confidence (highest first).
+    Returns candidates ordered by extraction priority.
     """
     candidates: list[Candidate] = []
 
-    # Strategy 1: Direct parse (highest confidence if entire text is JSON)
+    # Strategy 1: Direct parse
     candidates.extend(extract_direct(text))
 
-    # Strategy 2: Markdown fences (high confidence)
+    # Strategy 2: Markdown fences
     candidates.extend(extract_from_markdown_fence(text))
 
-    # Strategy 3: Brace matching (medium confidence)
+    # Strategy 3: Brace matching
     candidates.extend(extract_from_brace_matching(text))
 
-    # Strategy 4: Heuristic (low confidence)
+    # Strategy 4: Heuristic
     candidates.extend(extract_heuristic(text))
 
     # Remove duplicates based on raw content
@@ -282,31 +255,25 @@ def extract_all_candidates(text: str) -> list[Candidate]:
             seen_raw.add(c.raw)
             unique_candidates.append(c)
 
-    # Sort by confidence (highest first)
-    unique_candidates.sort(key=lambda c: c.confidence, reverse=True)
-
     return unique_candidates
 
 
 def rank_candidates(candidates: list[Candidate]) -> list[Candidate]:
-    """Rank candidates by confidence and other factors.
+    """Rank candidates by extraction method priority and size.
 
     Returns a new list sorted by ranking score.
     """
     if not candidates:
         return []
 
-    def ranking_score(c: Candidate) -> float:
-        score = c.confidence
+    method_priority = {
+        ExtractionMethod.DIRECT_PARSE: 0,
+        ExtractionMethod.MARKDOWN_FENCE: 1,
+        ExtractionMethod.BRACE_MATCH: 2,
+        ExtractionMethod.HEURISTIC: 3,
+    }
 
-        # Bonus for larger structures (more likely to be the intended JSON)
-        length_bonus = min(0.1, len(c.raw) / 10000)
-        score += length_bonus
-
-        # Bonus for DIRECT_PARSE method
-        if c.method == ExtractionMethod.DIRECT_PARSE:
-            score += 0.1
-
-        return score
-
-    return sorted(candidates, key=ranking_score, reverse=True)
+    return sorted(
+        candidates,
+        key=lambda c: (method_priority.get(c.method, 99), -len(c.raw)),
+    )

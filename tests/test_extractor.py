@@ -1,7 +1,6 @@
 """Tests for ai_extract.extractor module."""
 
 from ai_extract.extractor import (
-    _calculate_brace_match_confidence,
     _looks_like_json,
     _match_braces,
     extract_all_candidates,
@@ -101,40 +100,6 @@ class TestMatchBraces:
         assert result == (7, 8)
 
 
-class TestCalculateBraceMatchConfidence:
-    """Tests for _calculate_brace_match_confidence helper."""
-
-    def test_base_confidence(self) -> None:
-        """Test base confidence for simple JSON."""
-        conf = _calculate_brace_match_confidence("{}")
-        # Short content gets penalty, no quotes or colons
-        assert 0.5 <= conf <= 0.8
-
-    def test_with_quotes(self) -> None:
-        """Test confidence bonus for having quotes."""
-        conf_with = _calculate_brace_match_confidence('{"key"}')
-        conf_without = _calculate_brace_match_confidence("{key}")
-        assert conf_with > conf_without
-
-    def test_with_colons(self) -> None:
-        """Test confidence bonus for having colons."""
-        conf_with = _calculate_brace_match_confidence('{"key": 1}')
-        conf_without = _calculate_brace_match_confidence('{"key" 1}')
-        assert conf_with > conf_without
-
-    def test_short_content_penalty(self) -> None:
-        """Test that very short content gets penalized."""
-        conf_short = _calculate_brace_match_confidence("{}")
-        conf_longer = _calculate_brace_match_confidence('{"key": "value", "another": 123}')
-        assert conf_longer > conf_short
-
-    def test_max_confidence_capped(self) -> None:
-        """Test that confidence is capped at 0.9."""
-        # Even with all bonuses, should not exceed 0.9
-        conf = _calculate_brace_match_confidence('{"key": "value", "a": "b"}')
-        assert conf <= 0.9
-
-
 class TestExtractDirect:
     """Tests for extract_direct function."""
 
@@ -144,7 +109,6 @@ class TestExtractDirect:
         assert len(candidates) == 1
         assert candidates[0].raw == '{"key": "value"}'
         assert candidates[0].method == ExtractionMethod.DIRECT_PARSE
-        assert candidates[0].confidence == 1.0
 
     def test_pure_json_array(self) -> None:
         """Test extracting pure JSON array."""
@@ -183,7 +147,6 @@ class TestExtractFromMarkdownFence:
         assert len(candidates) == 1
         assert candidates[0].raw == '{"key": "value"}'
         assert candidates[0].method == ExtractionMethod.MARKDOWN_FENCE
-        assert candidates[0].confidence == 0.95
 
     def test_generic_fence(self) -> None:
         """Test extracting from generic ``` fence."""
@@ -195,7 +158,6 @@ class TestExtractFromMarkdownFence:
         candidates = extract_from_markdown_fence(text)
         assert len(candidates) == 1
         assert candidates[0].raw == '{"key": "value"}'
-        assert candidates[0].confidence == 0.85
 
     def test_multiple_fences(self) -> None:
         """Test extracting from multiple fences."""
@@ -277,7 +239,6 @@ class TestExtractHeuristic:
         assert len(candidates) == 1
         assert candidates[0].raw == '{"key": "value"}'
         assert candidates[0].method == ExtractionMethod.HEURISTIC
-        assert candidates[0].confidence == 0.6
 
     def test_heres_pattern(self) -> None:
         """Test "here's the output:" pattern."""
@@ -312,16 +273,11 @@ Also: {"inline": true}
         # Should find fenced and inline
         assert len(candidates) >= 2
 
-    def test_sorted_by_confidence(self) -> None:
-        """Test that candidates are sorted by confidence."""
-        text = """```json
-{"high": true}
-```
-{"medium": true}"""
+    def test_priority_ordering(self) -> None:
+        """Test that direct parse stays highest priority."""
+        text = '{"high": true}'
         candidates = extract_all_candidates(text)
-        # Should be sorted high to low confidence
-        for i in range(len(candidates) - 1):
-            assert candidates[i].confidence >= candidates[i + 1].confidence
+        assert candidates[0].method == ExtractionMethod.DIRECT_PARSE
 
     def test_deduplication(self) -> None:
         """Test that duplicate candidates are removed."""
@@ -352,7 +308,6 @@ class TestRankCandidates:
             start_pos=0,
             end_pos=2,
             method=ExtractionMethod.BRACE_MATCH,
-            confidence=0.8,
         )
         result = rank_candidates([candidate])
         assert len(result) == 1
@@ -365,14 +320,12 @@ class TestRankCandidates:
             start_pos=0,
             end_pos=2,
             method=ExtractionMethod.DIRECT_PARSE,
-            confidence=0.8,
         )
         brace = Candidate(
             raw="{}",
             start_pos=0,
             end_pos=2,
             method=ExtractionMethod.BRACE_MATCH,
-            confidence=0.8,
         )
         result = rank_candidates([brace, direct])
         assert result[0].method == ExtractionMethod.DIRECT_PARSE
@@ -384,14 +337,12 @@ class TestRankCandidates:
             start_pos=0,
             end_pos=2,
             method=ExtractionMethod.BRACE_MATCH,
-            confidence=0.8,
         )
         large = Candidate(
             raw='{"key": "value", "another": "data"}',
             start_pos=0,
             end_pos=35,
             method=ExtractionMethod.BRACE_MATCH,
-            confidence=0.8,
         )
         result = rank_candidates([small, large])
         assert len(result[0].raw) > len(result[1].raw)

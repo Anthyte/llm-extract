@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -21,9 +21,7 @@ class ErrorType(Enum):
 
     NO_JSON_FOUND = "no_json_found"
     INVALID_JSON = "invalid_json"
-    TRUNCATED_JSON = "truncated_json"
     AMBIGUOUS_MULTIPLE = "ambiguous_multiple"
-    REPAIR_FAILED = "repair_failed"
 
 
 class ExtractError(Exception):
@@ -52,11 +50,6 @@ class Candidate:
     start_pos: int
     end_pos: int
     method: ExtractionMethod
-    confidence: float
-
-    def __post_init__(self) -> None:
-        if not 0.0 <= self.confidence <= 1.0:
-            raise ValueError(f"Confidence must be between 0.0 and 1.0, got {self.confidence}")
 
 
 @dataclass
@@ -66,12 +59,6 @@ class ExtractResult:
     success: bool
     data: Any | None = None
     raw_json: str | None = None
-    confidence: float = 0.0
     method: ExtractionMethod | None = None
-    repairs_applied: list[str] = field(default_factory=list)
     candidates_found: int = 0
     error: ExtractError | None = None
-
-    def __post_init__(self) -> None:
-        if not 0.0 <= self.confidence <= 1.0:
-            raise ValueError(f"Confidence must be between 0.0 and 1.0, got {self.confidence}")

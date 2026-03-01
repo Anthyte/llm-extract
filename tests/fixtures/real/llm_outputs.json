@@ -46,29 +46,6 @@
       }
     },
     {
-      "name": "ai_with_trailing_comma",
-      "source": "Various",
-      "input": "The API response is:\n{\n  \"items\": [\n    {\"id\": 1, \"name\": \"Item 1\"},\n    {\"id\": 2, \"name\": \"Item 2\"},\n  ],\n}",
-      "expected": {
-        "items": [
-          {"id": 1, "name": "Item 1"},
-          {"id": 2, "name": "Item 2"}
-        ]
-      },
-      "notes": "Common AI error: trailing commas"
-    },
-    {
-      "name": "ai_single_quotes",
-      "source": "Various",
-      "input": "Here's the data:\n{'user': 'alice', 'role': 'admin', 'active': true}",
-      "expected": {
-        "user": "alice",
-        "role": "admin",
-        "active": true
-      },
-      "notes": "Some AI systems output Python-style single quotes"
-    },
-    {
       "name": "function_call_response",
       "source": "OpenAI Function Calling",
       "input": "{\"name\": \"get_weather\", \"arguments\": \"{\\\"location\\\": \\\"San Francisco\\\", \\\"unit\\\": \\\"celsius\\\"}\"}",

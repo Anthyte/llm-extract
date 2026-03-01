@@ -42,15 +42,10 @@ class TestExtractJson:
         result = extract_json(text)
         assert result == {"key": "value"}
 
-    def test_repair_trailing_comma(self) -> None:
-        """Test automatic repair of trailing comma."""
-        result = extract_json('{"key": "value",}')
-        assert result == {"key": "value"}
-
-    def test_repair_disabled(self) -> None:
-        """Test that repair can be disabled."""
+    def test_invalid_json_raises(self) -> None:
+        """Test that malformed JSON raises error."""
         with pytest.raises(ExtractError) as exc_info:
-            extract_json('{"key": "value",}', repair=False)
+            extract_json('{"key": "value",}')
         assert exc_info.value.error_type == ErrorType.INVALID_JSON
 
     def test_no_json_raises(self) -> None:
@@ -110,17 +105,11 @@ class TestExtractJsonStrategy:
         result = extract_json('{"key": "value"}', strategy="all")
         assert result == [{"key": "value"}]
 
-    def test_strategy_all_with_repair(self) -> None:
-        """Test 'all' strategy with repair."""
-        text = '{"a": 1,} and {"b": 2,}'
-        result = extract_json(text, strategy="all")
-        assert len(result) == 2
-
-    def test_strategy_all_no_repair_skip_invalid(self) -> None:
-        """Test 'all' strategy with repair=False skips invalid JSON."""
+    def test_strategy_all_skips_invalid(self) -> None:
+        """Test 'all' strategy skips invalid JSON."""
         # First JSON is valid, second needs repair
         text = '{"a": 1} and {"b": 2,}'
-        result = extract_json(text, strategy="all", repair=False)
+        result = extract_json(text, strategy="all")
         # Should only get the valid one
         assert len(result) == 1
         assert {"a": 1} in result
@@ -131,7 +120,6 @@ class TestExtractJsonStrategy:
         result = extract_json_with_metadata(
             "Here is some {broken: json} text",
             strategy="all",
-            repair=False,
         )
         assert result.success is False
         assert result.error is not None
@@ -146,51 +134,8 @@ class TestExtractJsonWithMetadata:
         assert result.success is True
         assert result.data == {"key": "value"}
         assert result.raw_json == '{"key": "value"}'
-        assert result.confidence == 1.0
         assert result.method == ExtractionMethod.DIRECT_PARSE
         assert result.error is None
-
-    def test_markdown_fence_confidence(self) -> None:
-        """Test that markdown fence has high confidence."""
-        text = """```json
-{"key": "value"}
-```"""
-        result = extract_json_with_metadata(text)
-        assert result.success is True
-        assert result.confidence >= 0.9
-        assert result.method == ExtractionMethod.MARKDOWN_FENCE
-
-    def test_brace_match_confidence(self) -> None:
-        """Test that brace match has medium confidence."""
-        result = extract_json_with_metadata('Some text {"key": "value"} more text')
-        assert result.success is True
-        assert 0.7 <= result.confidence <= 0.95
-        assert result.method == ExtractionMethod.BRACE_MATCH
-
-    def test_repairs_tracked(self) -> None:
-        """Test that repairs are tracked in metadata."""
-        result = extract_json_with_metadata('{"key": "value",}')
-        assert result.success is True
-        assert "trailing_comma_removal" in result.repairs_applied
-
-    def test_confidence_reduced_with_repair(self) -> None:
-        """Test that confidence is reduced when repairs are applied."""
-        clean = extract_json_with_metadata('{"key": "value"}')
-        repaired = extract_json_with_metadata('{"key": "value",}')
-        assert clean.confidence > repaired.confidence
-
-    def test_truncated_json_in_repair_result(self) -> None:
-        """Test that truncated JSON gets repaired when possible."""
-        # Use repair module directly to test truncation handling
-        from ai_extract.repair import is_truncated_json, repair_json
-
-        # Verify truncation detection
-        assert is_truncated_json('{"key": "value"') is True
-
-        # Verify repair completes it
-        result = repair_json('{"key": "value"')
-        assert result.is_truncated is True
-        assert "}" in result.repaired
 
     def test_candidates_found_tracked(self) -> None:
         """Test that candidates_found is tracked."""
@@ -213,9 +158,9 @@ class TestExtractJsonWithMetadata:
         assert result.error.error_type == ErrorType.NO_JSON_FOUND
 
     def test_invalid_json_error(self) -> None:
-        """Test invalid JSON error when repair fails."""
+        """Test invalid JSON error when parsing fails."""
         # Text that looks like JSON but can't be parsed
-        result = extract_json_with_metadata('{"key": value_without_quotes}', repair=False)
+        result = extract_json_with_metadata('{"key": value_without_quotes}')
         assert result.success is False
         assert result.error is not None
         assert result.error.error_type == ErrorType.INVALID_JSON

@@ -85,12 +85,6 @@ class TestMain:
         output = mock_stdout.getvalue().strip()
         assert output == '{"key":"value"}'
 
-    def test_no_repair_flag(self) -> None:
-        """Test --no-repair flag."""
-        with patch("sys.stderr", new_callable=StringIO):
-            exit_code = main(['{"key": "value",}', "--no-repair"])
-        assert exit_code == 1  # Should fail without repair
-
     def test_strategy_all(self) -> None:
         """Test --all flag."""
         with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
@@ -122,24 +116,13 @@ class TestMain:
             exit_code = main(['{"key": "value"}', "--verbose"])
         assert exit_code == 0
         stderr_output = mock_stderr.getvalue()
-        assert "Confidence:" in stderr_output
         assert "Method:" in stderr_output
-
-    def test_verbose_with_repairs(self) -> None:
-        """Test verbose output shows repairs."""
-        with (
-            patch("sys.stdout", new_callable=StringIO),
-            patch("sys.stderr", new_callable=StringIO) as mock_stderr,
-        ):
-            exit_code = main(['{"key": "value",}', "--verbose"])
-        assert exit_code == 0
-        assert "Repairs applied:" in mock_stderr.getvalue()
 
     def test_verbose_on_error(self) -> None:
         """Test verbose shows candidates on error."""
         # Create a situation where candidates are found but parsing fails
         with patch("sys.stderr", new_callable=StringIO):
-            exit_code = main(["{invalid json}", "--verbose", "--no-repair"])
+            exit_code = main(["{invalid json}", "--verbose"])
         assert exit_code == 1
 
 
@@ -237,32 +220,14 @@ class TestPrintMetadata:
         result = ExtractResult(
             success=True,
             data={"key": "value"},
-            confidence=0.95,
             method=ExtractionMethod.MARKDOWN_FENCE,
             candidates_found=2,
         )
         with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
             _print_metadata(result)
         output = mock_stderr.getvalue()
-        assert "0.95" in output
         assert "markdown_fence" in output
         assert "2" in output
-
-    def test_print_with_repairs(self) -> None:
-        """Test printing metadata with repairs."""
-        result = ExtractResult(
-            success=True,
-            data={"key": "value"},
-            confidence=0.9,
-            method=ExtractionMethod.BRACE_MATCH,
-            repairs_applied=["trailing_comma_removal", "quote_normalization"],
-            candidates_found=1,
-        )
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
-            _print_metadata(result)
-        output = mock_stderr.getvalue()
-        assert "trailing_comma_removal" in output
-        assert "quote_normalization" in output
 
     def test_print_non_result_object(self) -> None:
         """Test that non-ExtractResult objects are handled."""
@@ -275,7 +240,6 @@ class TestPrintMetadata:
         result = ExtractResult(
             success=True,
             data={"key": "value"},
-            confidence=0.5,
             method=None,
             candidates_found=1,
         )
