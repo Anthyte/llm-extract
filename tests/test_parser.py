@@ -1,5 +1,8 @@
 """Tests for ai_extract.parser module."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 from ai_extract import (
@@ -9,6 +12,44 @@ from ai_extract import (
     extract_json,
     extract_json_with_metadata,
 )
+from ai_extract.parser import _extract_first_valid
+
+FIXTURE_DIR = Path(__file__).parent / "fixtures"
+SYNTHETIC_CASES = json.loads(
+    (FIXTURE_DIR / "synthetic" / "test_cases.json").read_text(encoding="utf-8")
+)["cases"]
+REAL_CASES = json.loads((FIXTURE_DIR / "real" / "llm_outputs.json").read_text(encoding="utf-8"))[
+    "cases"
+]
+ERROR_TYPE_BY_NAME = {
+    "no_json_found": ErrorType.NO_JSON_FOUND,
+    "invalid_json": ErrorType.INVALID_JSON,
+    "ambiguous_multiple": ErrorType.AMBIGUOUS_MULTIPLE,
+}
+PAYLOADS = [
+    ("object", '{"a": 1, "b": 2}', {"a": 1, "b": 2}),
+    ("array", "[1, 2, 3]", [1, 2, 3]),
+]
+WRAPPERS = [
+    ("plain", "{text}"),
+    ("prefix", "prefix {text}"),
+    ("suffix", "{text} suffix"),
+    ("both", "prefix {text} suffix"),
+    ("json_fence", "```json\n{text}\n```"),
+    ("generic_fence", "```\n{text}\n```"),
+    ("json_fence_text", "before\n```json\n{text}\n```\nafter"),
+    ("generic_fence_text", "before\n```\n{text}\n```\nafter"),
+]
+COMBINATION_CASES: list[tuple[str, object, str]] = []
+for payload_name, payload, expected in PAYLOADS:
+    for wrapper_name, wrapper in WRAPPERS:
+        COMBINATION_CASES.append(
+            (
+                wrapper.format(text=payload),
+                expected,
+                f"{payload_name}_{wrapper_name}",
+            )
+        )
 
 
 class TestExtractJson:
@@ -165,6 +206,14 @@ class TestExtractJsonWithMetadata:
         assert result.error is not None
         assert result.error.error_type == ErrorType.INVALID_JSON
 
+    def test_extract_first_valid_empty(self) -> None:
+        """Test empty candidates list returns invalid JSON error."""
+        result = _extract_first_valid([])
+        assert result.success is False
+        assert result.error is not None
+        assert result.error.error_type == ErrorType.INVALID_JSON
+        assert result.error.message == "Failed to parse JSON from 0 candidate(s)"
+
 
 class TestExtractJsonEdgeCases:
     """Tests for edge cases in JSON extraction."""
@@ -237,3 +286,70 @@ Second:
 """
         result = extract_json(text, strategy="all")
         assert len(result) >= 2
+
+
+class TestFixtureCases:
+    """Tests for JSON extraction from fixture cases."""
+
+    @pytest.mark.parametrize(
+        ("case",),
+        [(case,) for case in SYNTHETIC_CASES],
+        ids=[case["name"] for case in SYNTHETIC_CASES],
+    )
+    def test_synthetic_cases(self, case: dict[str, object]) -> None:
+        input_text = case["input"]
+        if "expected_error" in case:
+            expected_error = ERROR_TYPE_BY_NAME[case["expected_error"]]
+            with pytest.raises(ExtractError) as exc_info:
+                extract_json(input_text)
+            assert exc_info.value.error_type == expected_error
+            return
+        if "expected" in case:
+            assert extract_json(input_text) == case["expected"]
+        if "expected_first" in case:
+            assert extract_json(input_text, strategy="first") == case["expected_first"]
+        if "expected_all" in case:
+            assert extract_json(input_text, strategy="all") == case["expected_all"]
+
+    @pytest.mark.parametrize(
+        ("case",),
+        [(case,) for case in REAL_CASES],
+        ids=[case["name"] for case in REAL_CASES],
+    )
+    def test_real_cases(self, case: dict[str, object]) -> None:
+        input_text = case["input"]
+        if "expected" in case:
+            assert extract_json(input_text) == case["expected"]
+        if "expected_first" in case:
+            assert extract_json(input_text, strategy="first") == case["expected_first"]
+        if "expected_all" in case:
+            assert extract_json(input_text, strategy="all") == case["expected_all"]
+        if "expected_last" in case:
+            result = extract_json(input_text, strategy="all")
+            assert isinstance(result, list)
+            assert result[-1] == case["expected_last"]
+
+
+class TestCombinationCoverage:
+    """Tests for wrapper and payload combinations."""
+
+    @pytest.mark.parametrize(
+        ("text", "expected", "case_id"),
+        COMBINATION_CASES,
+        ids=[case_id for _, _, case_id in COMBINATION_CASES],
+    )
+    def test_wrapped_payloads(self, text: str, expected: object, case_id: str) -> None:
+        assert extract_json(text) == expected
+
+    @pytest.mark.parametrize(
+        ("first_payload", "second_payload"),
+        [
+            ('{"a": 1}', '{"b": 2}'),
+            ('{"a": 1}', "[1, 2]"),
+            ("[1, 2]", '{"b": 2}'),
+        ],
+    )
+    def test_multi_block_combinations(self, first_payload: str, second_payload: str) -> None:
+        text = f"{first_payload} and then {second_payload}"
+        result = extract_json(text, strategy="all")
+        assert len(result) == 2

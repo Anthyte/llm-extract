@@ -74,8 +74,48 @@
     {
       "name": "multiple_json_blocks",
       "input": "{\"first\": 1} and then {\"second\": 2}",
-      "expected_first": {"first": 1},
+      "expected_first": {"second": 2},
       "expected_all": [{"first": 1}, {"second": 2}]
+    },
+    {
+      "name": "no_json_text",
+      "input": "hello from the model",
+      "expected_error": "no_json_found"
+    },
+    {
+      "name": "whitespace_only",
+      "input": "   ",
+      "expected_error": "no_json_found"
+    },
+    {
+      "name": "invalid_trailing_comma_object",
+      "input": "{\"key\": \"value\",}",
+      "expected_error": "invalid_json"
+    },
+    {
+      "name": "invalid_trailing_comma_array",
+      "input": "[1, 2, 3,]",
+      "expected_error": "invalid_json"
+    },
+    {
+      "name": "invalid_single_quotes",
+      "input": "{'key': 'value'}",
+      "expected_error": "invalid_json"
+    },
+    {
+      "name": "invalid_unquoted_keys",
+      "input": "{key: \"value\", another: 123}",
+      "expected_error": "invalid_json"
+    },
+    {
+      "name": "invalid_missing_value",
+      "input": "{\"key\": }",
+      "expected_error": "invalid_json"
+    },
+    {
+      "name": "invalid_mismatched_braces",
+      "input": "{]",
+      "expected_error": "invalid_json"
     }
   ]
 }

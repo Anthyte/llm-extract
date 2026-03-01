@@ -84,7 +84,7 @@
       "name": "multi_turn_extraction",
       "source": "Various",
       "input": "First response: {\"step\": 1, \"status\": \"started\"}\n\nProcessing...\n\nFinal response: {\"step\": 2, \"status\": \"completed\", \"result\": \"success\"}",
-      "expected_first": {"step": 1, "status": "started"},
+      "expected_first": {"step": 2, "status": "completed", "result": "success"},
       "expected_last": {"step": 2, "status": "completed", "result": "success"},
       "expected_all": [
         {"step": 1, "status": "started"},

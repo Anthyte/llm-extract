@@ -228,6 +228,11 @@ class TestExtractFromBraceMatching:
         """Test that text without JSON returns empty list."""
         assert extract_from_brace_matching("no json here") == []
 
+    def test_unmatched_brace_skipped(self) -> None:
+        """Test that unmatched braces are skipped."""
+        text = "prefix { not valid"
+        assert extract_from_brace_matching(text) == []
+
 
 class TestExtractHeuristic:
     """Tests for extract_heuristic function."""
@@ -256,6 +261,11 @@ class TestExtractHeuristic:
     def test_no_pattern_match(self) -> None:
         """Test that text without patterns returns empty list."""
         assert extract_heuristic('{"key": "value"}') == []
+
+    def test_pattern_without_json(self) -> None:
+        """Test pattern match without JSON candidates."""
+        text = "Here is the JSON: not actually json"
+        assert extract_heuristic(text) == []
 
 
 class TestExtractAllCandidates:
