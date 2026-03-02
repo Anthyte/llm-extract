@@ -86,3 +86,6 @@ benchmarks/results/*.json
 benchmarks/results/*.html
 SPEC.md
 .pypirc
+
+# Git
+.gitconfig

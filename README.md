@@ -64,10 +64,6 @@ data = extract_json('```json\n{"data": [1,2,3]}\n```')
 data = extract_json('{"a": 1} and {"b": 2}')
 # Returns: {'a': 1}
 
-# Get largest JSON
-data = extract_json('{"a": 1} and {"b": 2, "c": 3}', strategy="largest")
-# Returns: {'b': 2, 'c': 3}
-
 # Get all JSON blocks
 data = extract_json('{"a": 1} and {"b": 2}', strategy="all")
 # Returns: [{'a': 1}, {'b': 2}]
@@ -88,18 +84,6 @@ except ExtractError as e:
 # Return None instead
 data = extract_json("no json here", raise_on_error=False)
 # Returns: None
-```
-
-### Get Extraction Metadata
-
-```python
-from ai_extract import extract_json_with_metadata
-
-result = extract_json_with_metadata('```json\n{"key": "value"}\n```')
-
-print(result.success)        # True
-print(result.data)           # {'key': 'value'}
-print(result.method)         # ExtractionMethod.MARKDOWN_FENCE
 ```
 
 ## CLI Usage
@@ -134,23 +118,10 @@ Extract JSON from text.
 - `text` (str): Text containing JSON
 - `strategy` (str): How to handle multiple JSON blocks
   - `"first"`: Return first valid JSON (default)
-  - `"largest"`: Return largest JSON structure
   - `"all"`: Return list of all JSON blocks
 - `raise_on_error` (bool): Raise ExtractError on failure (default: True)
 
 **Returns:** Parsed JSON data, or list if strategy="all", or None if raise_on_error=False
-
-### `extract_json_with_metadata(text, *, strategy="first")`
-
-Extract JSON with detailed metadata.
-
-**Returns:** `ExtractResult` with fields:
-- `success` (bool): Whether extraction succeeded
-- `data` (Any): Parsed JSON data
-- `raw_json` (str): Raw JSON string before parsing
-- `method` (ExtractionMethod): How JSON was found
-- `candidates_found` (int): Number of JSON candidates found
-- `error` (ExtractError): Error details if failed
 
 ## Extraction Methods
 

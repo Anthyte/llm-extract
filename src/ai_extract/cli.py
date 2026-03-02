@@ -8,7 +8,7 @@ from typing import Literal, cast
 
 import orjson
 
-from .parser import extract_json_with_metadata
+from .json_core import _extract_json_with_metadata
 
 
 def main(args: list[str] | None = None) -> int:
@@ -52,7 +52,7 @@ Examples:
     strategy_group = parser.add_mutually_exclusive_group()
     strategy_group.add_argument(
         "--strategy",
-        choices=["first", "largest", "all"],
+        choices=["first", "all"],
         default="first",
         help="Strategy for handling multiple JSON blocks (default: first)",
     )
@@ -60,11 +60,6 @@ Examples:
         "--all",
         action="store_true",
         help="Extract all JSON blocks (shorthand for --strategy all)",
-    )
-    strategy_group.add_argument(
-        "--largest",
-        action="store_true",
-        help="Extract the largest JSON block (shorthand for --strategy largest)",
     )
 
     # Output options
@@ -106,14 +101,12 @@ Examples:
         return 1
 
     # Determine strategy
-    strategy: Literal["first", "largest", "all"] = parsed_args.strategy
+    strategy: Literal["first", "all"] = parsed_args.strategy
     if parsed_args.all:
         strategy = "all"
-    elif parsed_args.largest:
-        strategy = "largest"
 
     # Extract JSON
-    result = extract_json_with_metadata(
+    result = _extract_json_with_metadata(
         text,
         strategy=strategy,
     )
@@ -122,8 +115,6 @@ Examples:
     if not result.success:
         error_msg = result.error.message if result.error else "Unknown error"
         print(f"Error: {error_msg}", file=sys.stderr)
-        if parsed_args.verbose and result.candidates_found > 0:
-            print(f"Candidates found: {result.candidates_found}", file=sys.stderr)
         return 1
 
     # Output JSON
@@ -175,9 +166,10 @@ def _print_metadata(result: object) -> None:
         return
 
     print("\n--- Metadata ---", file=sys.stderr)
-    if result.method:
-        print(f"Method: {result.method.value}", file=sys.stderr)
-    print(f"Candidates found: {result.candidates_found}", file=sys.stderr)
+    valid_count = (
+        len(result.data) if isinstance(result.data, list) else (1 if result.success else 0)
+    )
+    print(f"Valid JSON found: {valid_count}", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from ai_extract.cli import _format_output, _get_input_text, _print_metadata, main
-from ai_extract.types import ExtractionMethod, ExtractResult
+from ai_extract.types import ExtractResult
 
 
 class TestMain:
@@ -92,15 +92,6 @@ class TestMain:
         assert exit_code == 0
         assert "[" in mock_stdout.getvalue()  # Should be array
 
-    def test_strategy_largest(self) -> None:
-        """Test --largest flag."""
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-            exit_code = main(['{"a": 1} and {"b": 2, "c": 3}', "--largest"])
-        assert exit_code == 0
-        output = mock_stdout.getvalue()
-        assert '"b"' in output
-        assert '"c"' in output
-
     def test_strategy_option(self) -> None:
         """Test --strategy option."""
         with patch("sys.stdout", new_callable=StringIO):
@@ -116,7 +107,7 @@ class TestMain:
             exit_code = main(['{"key": "value"}', "--verbose"])
         assert exit_code == 0
         stderr_output = mock_stderr.getvalue()
-        assert "Method:" in stderr_output
+        assert "Valid JSON found:" in stderr_output
 
     def test_verbose_on_error(self) -> None:
         """Test verbose shows candidates on error."""
@@ -219,15 +210,12 @@ class TestPrintMetadata:
         """Test printing basic metadata."""
         result = ExtractResult(
             success=True,
-            data={"key": "value"},
-            method=ExtractionMethod.MARKDOWN_FENCE,
-            candidates_found=2,
+            data=[{"key": "value"}, {"other": 1}],
         )
         with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
             _print_metadata(result)
         output = mock_stderr.getvalue()
-        assert "markdown_fence" in output
-        assert "2" in output
+        assert "Valid JSON found: 2" in output
 
     def test_print_non_result_object(self) -> None:
         """Test that non-ExtractResult objects are handled."""
@@ -235,15 +223,13 @@ class TestPrintMetadata:
             _print_metadata("not a result")
         assert mock_stderr.getvalue() == ""
 
-    def test_print_without_method(self) -> None:
-        """Test printing when method is None."""
+    def test_print_without_list_data(self) -> None:
+        """Test printing when data is a single JSON value."""
         result = ExtractResult(
             success=True,
             data={"key": "value"},
-            method=None,
-            candidates_found=1,
         )
         with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
             _print_metadata(result)
         output = mock_stderr.getvalue()
-        assert "Method:" not in output
+        assert "Valid JSON found: 1" in output

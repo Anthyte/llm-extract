@@ -8,19 +8,13 @@ Basic usage:
     >>> print(data)
     {'key': 'value'}
 
-With metadata:
-    >>> from ai_extract import extract_json_with_metadata
-    >>> result = extract_json_with_metadata('{"key": "value"}')
-    >>> print(result.success, result.confidence)
-    True 1.0
-
 Extract all JSON blocks:
     >>> data = extract_json('{"a": 1} and {"b": 2}', strategy="all")
     >>> print(data)
     [{'a': 1}, {'b': 2}]
 """
 
-from .parser import extract_json, extract_json_with_metadata
+from .json_core import extract_json
 from .types import (
     Candidate,
     ErrorType,
@@ -32,7 +26,6 @@ from .types import (
 __all__ = [
     # Main API
     "extract_json",
-    "extract_json_with_metadata",
     # Types
     "ExtractResult",
     "ExtractError",

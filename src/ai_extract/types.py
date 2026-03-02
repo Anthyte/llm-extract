@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -11,21 +11,20 @@ class ExtractionMethod(Enum):
     """Method used to extract JSON from text."""
 
     DIRECT_PARSE = "direct_parse"
-    MARKDOWN_FENCE = "markdown_fence"
     BRACE_MATCH = "brace_match"
-    HEURISTIC = "heuristic"
 
 
 class ErrorType(Enum):
     """Classification of extraction errors."""
 
     NO_JSON_FOUND = "no_json_found"
-    INVALID_JSON = "invalid_json"
     AMBIGUOUS_MULTIPLE = "ambiguous_multiple"
 
 
 class ExtractError(Exception):
     """Exception raised when JSON extraction fails."""
+
+    __slots__ = ("message", "error_type", "position")
 
     def __init__(
         self,
@@ -42,23 +41,32 @@ class ExtractError(Exception):
         return f"ExtractError({self.error_type.value!r}, {self.message!r})"
 
 
-@dataclass
+@dataclass(slots=True, eq=False)  # type: ignore[call-overload]
 class Candidate:
-    """A potential JSON extraction candidate."""
+    """A potential JSON extraction candidate.
+
+    `start_pos` and `end_pos` mark the candidate span in the original text
+    using a half-open interval: ``[start_pos, end_pos)``.
+    `parsed_data` caches decoded JSON when available to avoid re-parsing.
+    `children` stores direct nested candidates, if any.
+    """
 
     raw: str
+    method: ExtractionMethod
     start_pos: int
     end_pos: int
-    method: ExtractionMethod
+    parsed_data: Any | None = None
+    children: list[Candidate] = field(default_factory=list)
 
 
-@dataclass
+@dataclass(slots=True, eq=False)  # type: ignore[call-overload]
 class ExtractResult:
-    """Result of a JSON extraction attempt with metadata."""
+    """Result of a JSON extraction attempt with metadata.
+
+    `data` holds the extracted JSON value. For strategy="all", `data` is a
+    list containing all successfully parsed JSON values.
+    """
 
     success: bool
     data: Any | None = None
-    raw_json: str | None = None
-    method: ExtractionMethod | None = None
-    candidates_found: int = 0
     error: ExtractError | None = None
