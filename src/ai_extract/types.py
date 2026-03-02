@@ -41,7 +41,7 @@ class ExtractError(Exception):
         return f"ExtractError({self.error_type.value!r}, {self.message!r})"
 
 
-@dataclass(slots=True, eq=False)  # type: ignore[call-overload]
+@dataclass(slots=True, eq=False)
 class Candidate:
     """A potential JSON extraction candidate.
 
@@ -59,7 +59,7 @@ class Candidate:
     children: list[Candidate] = field(default_factory=list)
 
 
-@dataclass(slots=True, eq=False)  # type: ignore[call-overload]
+@dataclass(slots=True, eq=False)
 class ExtractResult:
     """Result of a JSON extraction attempt with metadata.
 
