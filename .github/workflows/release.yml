@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+
+jobs:
+  release:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository at tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine hatchling packaging
+
+      # -------------------------
+      # Extract version
+      # -------------------------
+      - name: Extract version
+        id: extract_version
+        run: |
+          VERSION=$(python scripts/workflows/extract_version.py)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      # -------------------------
+      # Get latest tag
+      # -------------------------
+      - name: Get latest release version
+        id: get_latest_version
+        run: |
+          LATEST_VERSION=$(bash scripts/workflows/get_latest_version.sh)
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          echo "Latest release version: $LATEST_VERSION"
+
+      # -------------------------
+      # Compare versions
+      # -------------------------
+      - name: Compare versions
+        id: version_check
+        run: |
+          NEW_VERSION="${{ env.VERSION }}"
+          LATEST_VERSION="${{ steps.get_latest_version.outputs.latest_version }}"
+
+          IS_GREATER=$(python scripts/workflows/compare_versions.py "$NEW_VERSION" "$LATEST_VERSION")
+
+          if [ "$IS_GREATER" = "true" ]; then
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Version not incremented. Skipping release."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # -------------------------
+      # Build first
+      # -------------------------
+      - name: Build package
+        if: steps.version_check.outputs.proceed == 'true'
+        run: python -m build
+
+      # -------------------------
+      # Check if tag exists
+      # -------------------------
+      - name: Check if tag exists
+        id: check_tag
+        if: steps.version_check.outputs.proceed == 'true'
+        run: |
+          if git tag --list | grep -q "^v${{ env.VERSION }}$"; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # -------------------------
+      # Create tag
+      # -------------------------
+      - name: Create tag
+        if: steps.version_check.outputs.proceed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      # -------------------------
+      # Create GitHub Release
+      # -------------------------
+      - name: Create GitHub Release
+        if: steps.version_check.outputs.proceed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Release v${{ env.VERSION }}
+          body: |
+            ## Version ${{ env.VERSION }}
+
+            Automated release after successful tests.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # -------------------------
+      # Publish to PyPI
+      # -------------------------
+      - name: Publish to PyPI
+        if: steps.version_check.outputs.proceed == 'true' && steps.check_tag.outputs.tag_exists == 'false'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          twine upload --skip-existing dist/*
